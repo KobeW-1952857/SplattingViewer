@@ -99,8 +99,8 @@
 		{
 		  "name": "Bouwcampus",
 		  "url": "Assets/Models/Bouwcampus2/bouwcampus2_exterior.glb",
-		  "position": [346.0, -92.9, 0.41],
-		  "rotation": [0, 107, 0],
+		  "position": [341.0, -92.9, -0.5],
+		  "rotation": [0, 111, 0],
 		  "scale": [1, 1, 1]
 		}
 	],
