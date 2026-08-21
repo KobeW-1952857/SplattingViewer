@@ -2,6 +2,87 @@ import { SceneData, SceneParams } from "./types";
 import * as pc from "playcanvas";
 import { smoothCameraMove } from "./camera";
 
+function createCompass(app: pc.Application, camera: pc.Entity): void {
+  const compass = document.createElement("div");
+  compass.id = "coordinate-compass";
+  compass.setAttribute("aria-label", "Coordinate system compass");
+
+  const canvas = document.createElement("canvas");
+  canvas.className = "coordinate-compass-canvas";
+  compass.appendChild(canvas);
+  document.body.appendChild(compass);
+
+  const updateCompass = () => {
+    const size = compass.clientWidth;
+    const pixelRatio = window.devicePixelRatio || 1;
+    if (canvas.width !== size * pixelRatio) {
+      canvas.width = size * pixelRatio;
+      canvas.height = size * pixelRatio;
+    }
+
+    const context = canvas.getContext("2d");
+    if (!context) return;
+    context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+    context.clearRect(0, 0, size, size);
+
+    const center = size / 2;
+    const axisLength = size * 0.35;
+    const right = camera.right;
+    const up = camera.up;
+    const forward = camera.forward;
+    const axes = [
+      { label: "X", color: "#e53935", vector: new pc.Vec3(1, 0, 0) },
+      { label: "Y", color: "#8bc34a", vector: new pc.Vec3(0, 1, 0) },
+      { label: "Z", color: "#2196f3", vector: new pc.Vec3(0, 0, 1) },
+    ].map((axis) => ({
+      ...axis,
+      x: axis.vector.dot(right) * axisLength,
+      y: -axis.vector.dot(up) * axisLength,
+      depth: axis.vector.dot(forward),
+    })).sort((a, b) => a.depth - b.depth);
+
+    context.lineCap = "round";
+    context.lineJoin = "round";
+    axes.forEach((axis) => {
+      const endX = center + axis.x;
+      const endY = center + axis.y;
+      const angle = Math.atan2(axis.y, axis.x);
+      const opacity = 0.5 + Math.abs(axis.depth) * 0.5;
+
+      context.globalAlpha = opacity;
+      context.strokeStyle = axis.color;
+      context.lineWidth = 2.5;
+      context.beginPath();
+      context.moveTo(center, center);
+      context.lineTo(endX, endY);
+      context.stroke();
+
+      context.fillStyle = axis.color;
+      context.beginPath();
+      context.moveTo(endX, endY);
+      context.lineTo(endX - Math.cos(angle - 0.45) * 7, endY - Math.sin(angle - 0.45) * 7);
+      context.lineTo(endX - Math.cos(angle + 0.45) * 7, endY - Math.sin(angle + 0.45) * 7);
+      context.closePath();
+      context.fill();
+
+      context.font = "700 12px sans-serif";
+      context.textAlign = "center";
+      context.textBaseline = "middle";
+      context.fillText(axis.label, endX + Math.cos(angle) * 9, endY + Math.sin(angle) * 9);
+    });
+
+    context.globalAlpha = 1;
+    context.fillStyle = "#f5f5f5";
+    context.beginPath();
+    context.arc(center, center, 2.5, 0, Math.PI * 2);
+    context.fill();
+  };
+
+  app.on("update", updateCompass);
+  compass.addEventListener("DOMNodeRemoved", () => app.off("update", updateCompass));
+  updateCompass();
+}
+
 function bindDropdown(
   selectId: string,
   options: { text: string; value: any }[],
@@ -74,6 +155,7 @@ export function createOverlayUI(
   sceneParams: SceneParams
 ): void {
   bindMobileMenu();
+  createCompass(app, camera);
 
   if (sceneData.viewpoints && sceneData.viewpoints.length > 0) {
     const vpSelect = document.getElementById("viewpoint-select");

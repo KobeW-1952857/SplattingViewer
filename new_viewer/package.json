@@ -2,7 +2,6 @@
   "name": "SplatingViewer",
   "version": "1.0.0",
   "private": true,
-
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -12,12 +11,14 @@
   "dependencies": {
     "playcanvas": "^2.21.4"
   },
-
   "devDependencies": {
+    "@playcanvas/splat-transform": "^3.3.0",
     "playcanvas": "^2.21.4",
+    "typescript": "^7.0.2",
     "vite": "^8.2.1"
   },
   "allowScripts": {
-    "fsevents@2.3.3": true
+    "fsevents@2.3.3": true,
+    "webgpu@0.4.0": true
   }
 }

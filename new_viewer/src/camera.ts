@@ -22,8 +22,13 @@ export function createCamera(app: pc.Application, sceneData: SceneData, scenePar
 
   app.root.addChild(camera);
 
-  let c_p = new pc.Vec3(0.0, 2.5, 0.0);
-  let c_la = new pc.Vec3(1.0, 2.5, 0.0);
+  const firstModelPosition = sceneData.models?.find((model) => model.position)?.position;
+  let c_p = firstModelPosition
+    ? new pc.Vec3(firstModelPosition[0], firstModelPosition[1] + 20, firstModelPosition[2] + 20)
+    : new pc.Vec3(0.0, 2.5, 0.0);
+  let c_la = firstModelPosition
+    ? new pc.Vec3(firstModelPosition[0], firstModelPosition[1], firstModelPosition[2])
+    : new pc.Vec3(1.0, 2.5, 0.0);
 
   if (sceneParams.hasCamArgs) {
     c_p = sceneParams.camPos;

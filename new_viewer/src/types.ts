@@ -35,7 +35,7 @@ export interface SplatData {
   name?: string;
   path: string;
   position?: [number, number, number];
-  rotation?: [number, number, number, number];
+  rotation?: [number, number, number] | [number, number, number, number];
   scale?: [number, number, number];
   // lodDistances?: number[];
   // moveSpeed?: number;
@@ -45,7 +45,7 @@ export interface ModelData {
   name?: string;
   path: string;
   position?: [number, number, number];
-  rotation?: [number, number, number, number];
+  rotation?: [number, number, number] | [number, number, number, number];
   scale?: [number, number, number];
 }
 

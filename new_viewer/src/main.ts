@@ -108,6 +108,26 @@ function createScreen(app: pc.Application): pc.Entity {
   return screen;
 }
 
+function applyEntityTransform(
+  entity: pc.Entity,
+  position: number[] | undefined,
+  rotation: number[] | undefined,
+  scale: number[] | undefined
+): void {
+  const p = position || [0, 0, 0];
+  entity.setLocalPosition(p[0], p[1], p[2]);
+
+  const r = rotation || [0, 0, 0];
+  if (r.length === 4) {
+    entity.setLocalRotation(new pc.Quat(r[0], r[1], r[2], r[3]).normalize());
+  } else {
+    entity.setLocalEulerAngles(r[0], r[1], r[2]);
+  }
+
+  const s = scale || [1, 1, 1];
+  entity.setLocalScale(s[0], s[1], s[2]);
+}
+
 function createModelEntities(
   app: pc.Application,
   models: ModelData[] | undefined,
@@ -127,12 +147,8 @@ function createModelEntities(
       entity.addComponent("model", { asset });
     }
 
-    const p = modelDef.position || [0, 0, 0];
-    entity.setPosition(p[0], p[1], p[2]);
-    const r = modelDef.rotation || [0, 0, 0,1];
-    entity.setRotation(r[0], r[1], r[2], r[3]);
-    const s = modelDef.scale || [1, 1, 1];
-    entity.setLocalScale(s[0], s[1], s[2]);
+    applyEntityTransform(entity, modelDef.position, modelDef.rotation, modelDef.scale);
+    entity.rotateLocal(0, 90, 0);
 
     app.root.addChild(entity);
     modelEntities.push(entity);
@@ -153,14 +169,12 @@ function createSplatEntities(
     const entity = new pc.Entity(splatDef.name || `Splat-${index}`);
     entity.addComponent("gsplat", { asset, unified: true });
 
-    const p = splatDef.position || [0, 0, 0];
-    entity.setPosition(p[0], p[1], p[2]);
-    const r = splatDef.rotation || [0, 0, 0, 1];
-    entity.setRotation(r[0], r[1], r[2], r[3]);
-    const s = splatDef.scale || [1, 1, 1];
-    entity.setLocalScale(s[0], s[1], s[2]);
+    const scale = splatDef.scale ? [...splatDef.scale] : [1, 1, 1];
+    scale[2] = -scale[2];
 
-    (entity as any).gsplat.lodDistances = [5, 10, 25, 50, 65];
+    applyEntityTransform(entity, splatDef.position, splatDef.rotation, scale);
+    entity.rotateLocal(180, -90, 0);
+
     app.root.addChild(entity);
     splatEntities.push(entity);
   });
