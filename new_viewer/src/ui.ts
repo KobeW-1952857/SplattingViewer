@@ -188,11 +188,11 @@ export function createOverlayUI(
     (val) => {
       const numVal = parseInt(val, 10);
       sceneParams.lod = numVal;
-      const gsplatSettings = (app.scene as any).gsplat;
-      if (gsplatSettings) {
-        gsplatSettings.lodRangeMin = numVal;
-        gsplatSettings.lodRangeMax = 5;
-      }
+      const gsplatEntities = app.root.findComponents("gsplat");
+      gsplatEntities.forEach((gsplat: any) => {
+        gsplat.lodRangeMin = numVal;
+        gsplat.lodRangeMax = 5;
+      });
     },
     "LoD Settings"
   );

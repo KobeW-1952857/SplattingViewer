@@ -356,12 +356,10 @@ async function bootstrap() {
   const modelEntities = createModelEntities(app, sceneData.models, modelAssets);
   const splatEntities = createSplatEntities(app, sceneData, splatAssets);
 
-  // if (new URLSearchParams(window.location.search).has("debug")) {
   createDebugPanel({
     ...Object.fromEntries(modelEntities.map((e) => [e.name, e])),
     ...Object.fromEntries(splatEntities.map((e) => [e.name, e])),
   });
-// }
 
   // Setup Environment (Light)
   setupSceneEnvironment(app);
