@@ -1,12 +1,12 @@
 import * as pc from "playcanvas";
 // @ts-ignore
 import { CameraControls } from "playcanvas/scripts/esm/camera-controls.mjs";
-import { CameraControlsInstance, SceneData, SceneParams } from "./types";
+import { CameraControlsInstance, CameraData, SceneData, SceneParams } from "./types";
 
 // Add a flag to prevent double-registration warnings
 let isRegistered = false;
 
-export function createCamera(app: pc.Application, sceneData: SceneData, sceneParams: SceneParams): pc.Entity {
+export function createCamera(app: pc.Application, camera_data: CameraData | undefined, sceneParams: SceneParams): pc.Entity {
   // 1. Register the script HERE, ensuring the app already exists
   if (!isRegistered) {
     pc.registerScript(CameraControls, "cameraControls");
@@ -18,29 +18,27 @@ export function createCamera(app: pc.Application, sceneData: SceneData, scenePar
   camera.addComponent("script");
 
   const controls = camera.script!.create("cameraControls") as unknown as CameraControlsInstance;
-  setCameraControlSettings(controls, sceneData);
+  setCameraControlSettings(controls);
 
   app.root.addChild(camera);
 
-  const firstModelPosition = sceneData.models?.find((model) => model.position)?.position;
-  let c_p = firstModelPosition
-    ? new pc.Vec3(firstModelPosition[0], firstModelPosition[1] + 20, firstModelPosition[2] + 20)
-    : new pc.Vec3(0.0, 2.5, 0.0);
-  let c_la = firstModelPosition
-    ? new pc.Vec3(firstModelPosition[0], firstModelPosition[1], firstModelPosition[2])
-    : new pc.Vec3(1.0, 2.5, 0.0);
+  let c_p =  camera_data?.position || [1.0, 2.5, 0.0];
+  let c_la = camera_data?.lookAt || [1.0, 2.5, 0.0];
+
+  let c_pos = new pc.Vec3(...c_p);
+  let c_look = new pc.Vec3(...c_la);
 
   if (sceneParams.hasCamArgs) {
-    c_p = sceneParams.camPos;
-    c_la = sceneParams.camLookAt;
+    c_pos = sceneParams.camPos;
+    c_look = sceneParams.camLookAt;
   }
 
-  camera.setPosition(c_p);
-  camera.lookAt(c_la);
+  camera.setPosition(c_pos);
+  camera.lookAt(c_look);
 
   const angles = camera.getEulerAngles();
   if (controls) {
-    controls.look(c_la, false);
+    controls.look(c_look, false);
     controls.yaw = angles.y;
     controls.pitch = angles.x;
     controls.ey = angles.y;
@@ -52,9 +50,8 @@ export function createCamera(app: pc.Application, sceneData: SceneData, scenePar
   return camera;
 }
 
-export function setCameraControlSettings(controls: CameraControlsInstance, sceneData: SceneData): void {
+export function setCameraControlSettings(controls: CameraControlsInstance): void {
   if (!controls) return;
-  controls.moveSpeed = sceneData.moveSpeed ? sceneData.moveSpeed : 10;
   controls.moveSlowSpeed = controls.moveSpeed * 0.5;
   controls.moveFastSpeed = controls.moveSpeed * 2;
   controls.enableOrbit = false;
@@ -84,7 +81,7 @@ export function smoothCameraMove(
   camera.syncHierarchy();
 
   if (newControls) {
-    setCameraControlSettings(newControls, sceneData);
+    setCameraControlSettings(newControls);
     camera.lookAt(targetLookAt);
     
     const angles = camera.getEulerAngles();

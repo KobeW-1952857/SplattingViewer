@@ -1,4 +1,4 @@
-import { SceneData, SceneParams } from "./types";
+import { ElementsData, SceneData, SceneParams } from "./types";
 import * as pc from "playcanvas";
 import { smoothCameraMove } from "./camera";
 
@@ -152,6 +152,7 @@ export function createOverlayUI(
   app: pc.Application,
   camera: pc.Entity,
   sceneData: SceneData,
+  elementsData: ElementsData,
   sceneParams: SceneParams
 ): void {
   bindMobileMenu();
@@ -191,7 +192,7 @@ export function createOverlayUI(
       const gsplatEntities = app.root.findComponents("gsplat");
       gsplatEntities.forEach((gsplat: any) => {
         gsplat.lodRangeMin = numVal;
-        gsplat.lodRangeMax = 5;
+        // gsplat.lodRangeMax = 5;
       });
     },
     "LoD Settings"
@@ -216,4 +217,15 @@ export function createOverlayUI(
     },
     "Render Mode"
   );
+
+  const logoContainer = document.getElementById("top-right-logo-container");
+  if (logoContainer && elementsData.logos) {
+    elementsData.logos.forEach((logo) => {
+      const logoElement = document.createElement("a");
+      logoElement.href = logo.link || "#";
+      logoElement.target = "_blank";
+      logoElement.innerHTML = `<img src="${logo.image}" alt="${logo.alt}" class="logo-img" />`;
+      logoContainer.appendChild(logoElement);
+    });
+  }
 }

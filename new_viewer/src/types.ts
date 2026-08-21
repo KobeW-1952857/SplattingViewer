@@ -8,37 +8,12 @@ export interface SceneParams {
   lod: number;
 }
 
-export interface PortalData {
-  name?: string;
-  image: string;
-  position: [number, number, number];
-  minScale?: number;
-  maxScale?: number;
-  minSizeDistance?: number;
-  targetScene: string;
-  targetCameraPosition: [number, number, number];
-  targetCameraLookAt: [number, number, number];
-}
-
-export interface ViewpointData {
-  name?: string;
-  icon?: string;
-  position: [number, number, number];
-  minScale?: number;
-  maxScale?: number;
-  minSizeDistance?: number;
-  targetPosition: [number, number, number];
-  targetLookAt: [number, number, number];
-}
-
 export interface SplatData {
   name?: string;
   path: string;
   position?: [number, number, number];
   rotation?: [number, number, number] | [number, number, number, number];
   scale?: [number, number, number];
-  // lodDistances?: number[];
-  // moveSpeed?: number;
 }
 
 export interface ModelData {
@@ -47,6 +22,22 @@ export interface ModelData {
   position?: [number, number, number];
   rotation?: [number, number, number] | [number, number, number, number];
   scale?: [number, number, number];
+}
+
+export interface LogoData {
+  image: string;
+  link?: string;
+  alt: string;
+}
+
+export interface CameraData {
+  position: [number, number, number];
+  lookAt: [number, number, number];
+}
+
+export interface ElementsData {
+  logos?: LogoData[];
+  camera?: CameraData;
 }
 
 export interface LabelData {
@@ -74,7 +65,28 @@ export interface SceneData {
   // scripts?: string[];
 }
 
-export interface LabelWrapperEntity extends pc.Entity {
+export interface PortalData {
+  name?: string;
+  image: string;
+  position: [number, number, number];
+  minScale?: number;
+  maxScale?: number;
+  minSizeDistance?: number;
+  targetScene: string;
+  targetCameraPosition: [number, number, number];
+  targetCameraLookAt: [number, number, number];
+}
+
+export interface ViewpointData {
+  name?: string;
+  icon?: string;
+  position: [number, number, number];
+  minScale?: number;
+  maxScale?: number;
+  minSizeDistance?: number;
+  targetPosition: [number, number, number];
+  targetLookAt: [number, number, number];
+}export interface LabelWrapperEntity extends pc.Entity {
   setText: (newString: string) => void;
 }
 

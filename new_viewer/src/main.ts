@@ -2,7 +2,7 @@
 import "./style.css";
 import * as pc from "playcanvas";
 import { setMobileViewport, getSceneParams, toUrlPath } from "./utils";
-import { ModelData, SceneData, LabelWrapperEntity } from "./types";
+import { ModelData, SceneData, LabelWrapperEntity, ElementsData } from "./types";
 import { createCamera, smoothCameraMove } from "./camera";
 import { createOverlayUI } from "./ui";
 import {
@@ -43,13 +43,20 @@ function createApp(): { app: pc.Application; canvas: HTMLCanvasElement } {
   return { app, canvas };
 }
 
-async function loadSceneData(app: pc.Application, sceneName: string): Promise<[SceneData, string]> {
+async function loadSceneData(app: pc.Application, sceneName: string): Promise<[string, SceneData, ElementsData]> {
   const basePath = `Assets/Scenes/${sceneName}`;
-  const jsonAsset = new pc.Asset("scene-data", "json", {
+
+
+  const assets = [
+    new pc.Asset("scene-data", "json", {
     url: `${basePath}/scene.json`,
-  });
-  await loadAssets(app, [jsonAsset]);
-  return [jsonAsset.resource as SceneData, basePath];
+  }),
+    new pc.Asset("elements-data", "json", {
+    url: `${basePath}/elements.json`,
+  }),
+  ]
+  await loadAssets(app, assets);
+  return [basePath, assets[0].resource as SceneData, assets[1].resource as ElementsData];
 }
 
 /** Builds the map of assets to load (splat model, font, portal images, viewpoint icons, obj/glb models). */
@@ -341,7 +348,7 @@ async function bootstrap() {
 
   const { app } = createApp();
 
-  const [sceneData, basePath] = await loadSceneData(app, sceneParams.scene);
+  const [basePath, sceneData, elementsData] = await loadSceneData(app, sceneParams.scene);
 
   const { assets, splatAssets, modelAssets } = buildAssetMap(basePath, sceneData);
   await loadAssets(app, assets);
@@ -349,8 +356,8 @@ async function bootstrap() {
   const screen = createScreen(app);
 
   // Setup Camera & UI
-  const camera = createCamera(app, sceneData, sceneParams);
-  createOverlayUI(app, camera, sceneData, sceneParams);
+  const camera = createCamera(app, elementsData.camera, sceneParams);
+  createOverlayUI(app, camera, sceneData, elementsData, sceneParams);
 
   // Setup Models
   const modelEntities = createModelEntities(app, sceneData.models, modelAssets);
