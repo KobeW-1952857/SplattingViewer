@@ -66,26 +66,42 @@ body {
     min-width: 200px;
 }
 
-/* Hamburger Button (Hidden on Desktop) */
-#mobile-menu-btn {
-    display: none;
+/* Display mode navigation */
+#mode-menu {
+    display: block;
     position: fixed;
-    top: 20px;
     right: 20px;
+    bottom: 20px;
     z-index: 200;
-    background: rgba(255, 255, 255, 0.9);
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    padding: 10px;
-    font-size: 24px;
-    cursor: pointer;
+    pointer-events: none;
+}
+
+#mode-menu-button {
+    display: grid;
+    width: 46px;
+    height: 46px;
+    place-items: center;
+    border: 1px solid rgba(255, 255, 255, 0.55);
+    border-radius: 50%;
+    padding: 0;
+    background: rgba(18, 24, 31, 0.88);
+    color: #fff;
+    font-size: 22px;
     line-height: 1;
+    cursor: pointer;
+    pointer-events: auto;
+    box-shadow: 0 5px 18px rgba(0, 0, 0, 0.28);
+}
+
+#mode-menu-button:hover,
+#mode-menu-button:focus-visible {
+    background: #ffcccc;
+    color: #111;
+    outline: none;
 }
 
 /* --- MOBILE OVERRIDES --- */
 @media (max-width: 768px) {
-    #mobile-menu-btn { display: block; }
-    
     #ui-container, 
     #top-right-logo-container { 
         display: none !important; 
@@ -98,27 +114,9 @@ body {
         height: 84px;
     }
 
-    /* --- WHEN MENU IS OPEN --- */
-    body.menu-open #ui-container {
-        display: flex !important;
-        position: absolute;
-        top: 70px;
-        left: 0; right: 0;
-        width: 100%;
-        align-items: center;
-        background: rgba(0,0,0,0.8);
-        padding: 20px 0;
-        height: auto;
+    #mode-menu {
+        right: 16px;
+        bottom: 16px;
     }
 
-    body.menu-open #top-right-logo-container {
-        display: flex !important;
-        flex-direction: column;
-        position: absolute;
-        top: auto;
-        bottom: 20px;
-        left: 0; right: 0;
-        width: 100%;
-        justify-content: center;
-    }
 }

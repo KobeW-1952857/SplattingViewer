@@ -1,6 +1,7 @@
 import { ElementsData, SceneData, SceneParams } from "./types";
 import * as pc from "playcanvas";
 import { smoothCameraMove } from "./camera";
+import { isUiElementVisible } from "./utils";
 
 function createCompass(app: pc.Application, camera: pc.Entity): void {
   const compass = document.createElement("div");
@@ -34,12 +35,14 @@ function createCompass(app: pc.Application, camera: pc.Entity): void {
       { label: "X", color: "#e53935", vector: new pc.Vec3(1, 0, 0) },
       { label: "Y", color: "#8bc34a", vector: new pc.Vec3(0, 1, 0) },
       { label: "Z", color: "#2196f3", vector: new pc.Vec3(0, 0, 1) },
-    ].map((axis) => ({
-      ...axis,
-      x: axis.vector.dot(right) * axisLength,
-      y: -axis.vector.dot(up) * axisLength,
-      depth: axis.vector.dot(forward),
-    })).sort((a, b) => a.depth - b.depth);
+    ]
+      .map((axis) => ({
+        ...axis,
+        x: axis.vector.dot(right) * axisLength,
+        y: -axis.vector.dot(up) * axisLength,
+        depth: axis.vector.dot(forward),
+      }))
+      .sort((a, b) => a.depth - b.depth);
 
     context.lineCap = "round";
     context.lineJoin = "round";
@@ -60,15 +63,25 @@ function createCompass(app: pc.Application, camera: pc.Entity): void {
       context.fillStyle = axis.color;
       context.beginPath();
       context.moveTo(endX, endY);
-      context.lineTo(endX - Math.cos(angle - 0.45) * 7, endY - Math.sin(angle - 0.45) * 7);
-      context.lineTo(endX - Math.cos(angle + 0.45) * 7, endY - Math.sin(angle + 0.45) * 7);
+      context.lineTo(
+        endX - Math.cos(angle - 0.45) * 7,
+        endY - Math.sin(angle - 0.45) * 7,
+      );
+      context.lineTo(
+        endX - Math.cos(angle + 0.45) * 7,
+        endY - Math.sin(angle + 0.45) * 7,
+      );
       context.closePath();
       context.fill();
 
       context.font = "700 12px sans-serif";
       context.textAlign = "center";
       context.textBaseline = "middle";
-      context.fillText(axis.label, endX + Math.cos(angle) * 9, endY + Math.sin(angle) * 9);
+      context.fillText(
+        axis.label,
+        endX + Math.cos(angle) * 9,
+        endY + Math.sin(angle) * 9,
+      );
     });
 
     context.globalAlpha = 1;
@@ -79,15 +92,22 @@ function createCompass(app: pc.Application, camera: pc.Entity): void {
   };
 
   app.on("update", updateCompass);
-  compass.addEventListener("DOMNodeRemoved", () => app.off("update", updateCompass));
+  compass.addEventListener("DOMNodeRemoved", () =>
+    app.off("update", updateCompass),
+  );
   updateCompass();
+}
+
+function setUiElementVisible(elementId: string, visible: boolean): void {
+  const element = document.getElementById(elementId);
+  if (element) element.style.display = visible ? "" : "none";
 }
 
 function bindDropdown(
   selectId: string,
   options: { text: string; value: any }[],
   onSelectionChange: (value: string) => void,
-  placeholder = "Select option..."
+  placeholder = "Select option...",
 ): HTMLSelectElement | null {
   const select = document.getElementById(selectId) as HTMLSelectElement | null;
   if (!select) return null;
@@ -123,29 +143,43 @@ function bindDropdown(
   return select;
 }
 
-export function bindMobileMenu(): void {
-  const btn = document.getElementById("mobile-menu-btn");
-  if (!btn) return;
+export function bindMobileMenu(
+  mode: SceneParams["mode"],
+  onModeChange?: (mode: SceneParams["mode"]) => void,
+): void {
+  const modeMenu = document.getElementById("mode-menu");
+  const button = document.getElementById(
+    "mode-menu-button",
+  ) as HTMLButtonElement | null;
+  if (!modeMenu || !button) return;
 
-  let isOpen = false;
-  const toggleMenu = (e: Event) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const modes: Array<{
+    value: SceneParams["mode"];
+    icon: string;
+    label: string;
+  }> = [
+    { value: "normal", icon: "◉", label: "Normal mode" },
+    { value: "advanced", icon: "◈", label: "Advanced mode" },
+    { value: "debug", icon: "⚙", label: "Debug mode" },
+  ];
+  const currentIndex = modes.findIndex(({ value }) => value === mode);
+  const currentMode = modes[currentIndex] || modes[0];
+  const nextMode = modes[(currentIndex + 1) % modes.length];
 
-    isOpen = !isOpen;
-    if (isOpen) {
-      document.body.classList.add("menu-open");
-      btn.innerHTML = "✕";
-      btn.style.background = "#ffcccc";
-    } else {
-      document.body.classList.remove("menu-open");
-      btn.innerHTML = "☰";
-      btn.style.background = "rgba(255, 255, 255, 0.9)";
-    }
+  button.textContent = currentMode.icon;
+  button.dataset.mode = currentMode.value;
+  button.setAttribute("aria-label", currentMode.label);
+  button.title = currentMode.label;
+  button.onclick = () => {
+    const params = new URLSearchParams(window.location.search);
+    params.set("mode", nextMode.value);
+    window.history.replaceState(
+      {},
+      "",
+      `${window.location.pathname}?${params.toString()}`,
+    );
+    onModeChange?.(nextMode.value);
   };
-
-  btn.addEventListener("click", toggleMenu);
-  btn.addEventListener("touchstart", toggleMenu, { passive: false });
 }
 
 export function createOverlayUI(
@@ -153,31 +187,94 @@ export function createOverlayUI(
   camera: pc.Entity,
   sceneData: SceneData,
   elementsData: ElementsData,
-  sceneParams: SceneParams
+  sceneParams: SceneParams,
 ): void {
-  bindMobileMenu();
-  createCompass(app, camera);
+  const applyMode = (mode: SceneParams["mode"]): void => {
+    sceneParams.mode = mode;
 
-  if (sceneData.viewpoints && sceneData.viewpoints.length > 0) {
+    const mobileMenuVisible = isUiElementVisible(
+      elementsData,
+      "mobileMenu",
+      mode,
+    );
+    setUiElementVisible("mode-menu", mobileMenuVisible);
+    if (mobileMenuVisible) bindMobileMenu(mode, applyMode);
+
+    setUiElementVisible(
+      "viewpoint-select",
+      isUiElementVisible(elementsData, "viewpointSelect", mode),
+    );
+    setUiElementVisible(
+      "lod-select",
+      isUiElementVisible(elementsData, "lodSelect", mode),
+    );
+    setUiElementVisible(
+      "render-select",
+      isUiElementVisible(elementsData, "renderSelect", mode),
+    );
+    setUiElementVisible(
+      "coordinate-compass",
+      isUiElementVisible(elementsData, "compass", mode),
+    );
+    if (
+      isUiElementVisible(elementsData, "compass", mode) &&
+      !document.getElementById("coordinate-compass")
+    ) {
+      createCompass(app, camera);
+    }
+    setUiElementVisible(
+      "debug-panel",
+      isUiElementVisible(elementsData, "debugPanel", mode),
+    );
+    setUiElementVisible(
+      "top-right-logo-container",
+      isUiElementVisible(elementsData, "logos", mode),
+    );
+  };
+
+  applyMode(sceneParams.mode);
+
+  const viewpointSelectVisible = isUiElementVisible(
+    elementsData,
+    "viewpointSelect",
+    sceneParams.mode,
+  );
+  setUiElementVisible("viewpoint-select", viewpointSelectVisible);
+
+  if (
+    viewpointSelectVisible &&
+    sceneData.viewpoints &&
+    sceneData.viewpoints.length > 0
+  ) {
     const vpSelect = document.getElementById("viewpoint-select");
-    if (vpSelect) vpSelect.style.display = "block";
 
     const vpOptions = sceneData.viewpoints.map((vp, index) => ({
       text: vp.name || `Viewpoint ${index + 1}`,
       value: index,
     }));
 
-    bindDropdown("viewpoint-select", vpOptions, (selectedValue) => {
-      const index = parseInt(selectedValue, 10);
-      const viewpointData = sceneData.viewpoints?.[index];
-      if (viewpointData) {
-        const targetPos = new pc.Vec3(...viewpointData.targetPosition);
-        const targetLook = new pc.Vec3(...viewpointData.targetLookAt);
-        smoothCameraMove(camera, sceneData, targetPos, targetLook);
-      }
-    }, "Jump to Location...");
+    bindDropdown(
+      "viewpoint-select",
+      vpOptions,
+      (selectedValue) => {
+        const index = parseInt(selectedValue, 10);
+        const viewpointData = sceneData.viewpoints?.[index];
+        if (viewpointData) {
+          const targetPos = new pc.Vec3(...viewpointData.targetPosition);
+          const targetLook = new pc.Vec3(...viewpointData.targetLookAt);
+          smoothCameraMove(camera, sceneData, targetPos, targetLook);
+        }
+      },
+      "Jump to Location...",
+    );
   }
 
+  const lodSelectVisible = isUiElementVisible(
+    elementsData,
+    "lodSelect",
+    sceneParams.mode,
+  );
+  setUiElementVisible("lod-select", lodSelectVisible);
   const lodSelect = bindDropdown(
     "lod-select",
     [
@@ -192,10 +289,9 @@ export function createOverlayUI(
       const gsplatEntities = app.root.findComponents("gsplat");
       gsplatEntities.forEach((gsplat: any) => {
         gsplat.lodRangeMin = numVal;
-        // gsplat.lodRangeMax = 5;
       });
     },
-    "LoD Settings"
+    "LoD Settings",
   );
 
   if (lodSelect) {
@@ -203,6 +299,12 @@ export function createOverlayUI(
     lodSelect.dispatchEvent(new Event("change"));
   }
 
+  const renderSelectVisible = isUiElementVisible(
+    elementsData,
+    "renderSelect",
+    sceneParams.mode,
+  );
+  setUiElementVisible("render-select", renderSelectVisible);
   bindDropdown(
     "render-select",
     [
@@ -215,7 +317,7 @@ export function createOverlayUI(
         gsplatSettings.colorizeLod = parseInt(val, 10) === 1;
       }
     },
-    "Render Mode"
+    "Render Mode",
   );
 
   const logoContainer = document.getElementById("top-right-logo-container");

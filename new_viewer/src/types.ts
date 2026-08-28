@@ -2,11 +2,14 @@ import * as pc from "playcanvas";
 
 export interface SceneParams {
   scene: string;
+  mode: SceneMode;
   hasCamArgs: boolean;
   camPos: pc.Vec3;
   camLookAt: pc.Vec3;
   lod: number;
 }
+
+export type SceneMode = "normal" | "advanced" | "debug";
 
 export interface SplatData {
   name?: string;
@@ -23,7 +26,6 @@ export interface ModelData {
   rotation?: [number, number, number] | [number, number, number, number];
   scale?: [number, number, number];
 }
-
 export interface LogoData {
   image: string;
   link?: string;
@@ -44,6 +46,20 @@ export interface ElementsData {
   logos?: LogoData[];
   camera?: CameraData;
   groups?: Record<string, GroupData>;
+  ui?: Partial<Record<UiElementName, UiElementData>>;
+}
+
+export type UiElementName =
+  | "mobileMenu"
+  | "compass"
+  | "viewpointSelect"
+  | "lodSelect"
+  | "renderSelect"
+  | "debugPanel"
+  | "logos";
+
+export interface UiElementData {
+  visibleInModes?: SceneMode[];
 }
 
 export interface LabelData {
@@ -59,16 +75,9 @@ export interface LabelData {
 }
 
 export interface SceneData {
-  // splatAsset: string;
-  // orientation: [number, number, number];
-  // lodDistances?: number[];
-  // moveSpeed?: number;
-  // portals?: PortalData[];
-  // viewpoints?: ViewpointData[];
+  viewpoints?: ViewpointData[];
   splats?: SplatData[];
   models?: ModelData[];
-  // labels?: LabelData[];
-  // scripts?: string[];
 }
 
 export interface PortalData {

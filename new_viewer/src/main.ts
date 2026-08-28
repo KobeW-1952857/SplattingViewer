@@ -1,22 +1,16 @@
 // @ts-ignore: allow side-effect CSS import without type declarations
 import "./style.css";
 import * as pc from "playcanvas";
-import { setMobileViewport, getSceneParams, toUrlPath } from "./utils";
 import {
-  ModelData,
-  SceneData,
-  LabelWrapperEntity,
-  ElementsData,
-  GroupData,
-} from "./types";
-import { createCamera, smoothCameraMove } from "./camera";
+  setMobileViewport,
+  getSceneParams,
+  isUiElementVisible,
+  toUrlPath,
+} from "./utils";
+import { ModelData, SceneData, ElementsData, GroupData } from "./types";
+import { createCamera } from "./camera";
 import { createOverlayUI } from "./ui";
-import {
-  createBillboard,
-  createFloatingText,
-  navigateToScene,
-  setupSceneEnvironment,
-} from "./scene-elements";
+import { setupSceneEnvironment } from "./scene-elements";
 
 window.pc = pc;
 
@@ -131,18 +125,6 @@ function buildAssetMap(
   });
 
   return { assets, splatAssets, modelAssets };
-}
-
-function createScreen(app: pc.Application): pc.Entity {
-  const screen = new pc.Entity("Screen");
-  screen.addComponent("screen", {
-    referenceResolution: new pc.Vec2(1280, 780),
-    scaleBlend: 0.5,
-    scaleMode: pc.SCALEMODE_NONE,
-    screenSpace: true,
-  });
-  app.root.addChild(screen);
-  return screen;
 }
 
 function applyEntityTransform(
@@ -346,113 +328,6 @@ function createDebugPanel(
   document.body.appendChild(panel);
 }
 
-// function createPortalEntities(
-//   app: pc.Application,
-//   camera: pc.Entity,
-//   screen: pc.Entity,
-//   sceneData: SceneData,
-//   portalAssets: pc.Asset[],
-//   lod: number
-// ): pc.Entity[] {
-//   const portalEntities: pc.Entity[] = [];
-
-//   sceneData.portals?.forEach((portalDef, index) => {
-//     const pos = new pc.Vec3(...portalDef.position);
-//     const entity = createBillboard(
-//       app, camera, screen,
-//       portalDef.name || "Portal",
-//       portalAssets[index].resource,
-//       screen,
-//       () => navigateToScene(portalDef, lod),
-//       pos,
-//       {
-//         minScale: portalDef.minScale,
-//         maxScale: portalDef.maxScale,
-//         minSizeDistance: portalDef.minSizeDistance,
-//       }
-//     );
-//     portalEntities.push(entity);
-//   });
-
-//   return portalEntities;
-// }
-
-// function createViewpointEntities(
-//   app: pc.Application,
-//   camera: pc.Entity,
-//   screen: pc.Entity,
-//   sceneData: SceneData,
-//   viewpointAssets: pc.Asset[]
-// ): pc.Entity[] {
-//   const viewpointEntities: pc.Entity[] = [];
-
-//   sceneData.viewpoints?.forEach((vpDef, index) => {
-//     const pos = new pc.Vec3(...vpDef.position);
-//     const entity = createBillboard(
-//       app, camera, screen,
-//       vpDef.name || `Viewpoint-${index}`,
-//       viewpointAssets[index]?.resource,
-//       screen,
-//       () => {
-//         const targetPos = new pc.Vec3(...vpDef.targetPosition);
-//         const targetLook = new pc.Vec3(...vpDef.targetLookAt);
-//         smoothCameraMove(camera, sceneData, targetPos, targetLook);
-//       },
-//       pos,
-//       {
-//         minScale: vpDef.minScale ?? 0.4,
-//         maxScale: vpDef.maxScale ?? 1.5,
-//         minSizeDistance: vpDef.minSizeDistance ?? 50,
-//       }
-//     );
-//     viewpointEntities.push(entity);
-//   });
-
-//   return viewpointEntities;
-// }
-
-// function createLabels(
-//   app: pc.Application,
-//   camera: pc.Entity,
-//   screen: pc.Entity,
-//   fontAsset: pc.Asset,
-//   sceneData: SceneData
-// ): Map<string, LabelWrapperEntity> {
-//   const labels = new Map<string, LabelWrapperEntity>();
-
-//   sceneData.labels?.forEach((labelData) => {
-//     const textContent = labelData.text || "Label";
-//     const pos = labelData.position || [0, 0, 0];
-//     const fontSize = labelData.fontSize || 42;
-//     const name = labelData.name || textContent;
-
-//     const color = labelData.color
-//       ? new pc.Color(labelData.color[0], labelData.color[1], labelData.color[2])
-//       : new pc.Color(1, 1, 1);
-
-//     const bgColor = labelData.bgColor
-//       ? new pc.Color(
-//           labelData.bgColor[0],
-//           labelData.bgColor[1],
-//           labelData.bgColor[2],
-//           labelData.bgColor[3] ?? 0.6
-//         )
-//       : new pc.Color(0, 0, 0, 0.6);
-
-//     const label = createFloatingText(
-//       app, camera, screen, fontAsset, textContent,
-//       new pc.Vec3(pos[0], pos[1], pos[2]),
-//       fontSize, color, bgColor,
-//       labelData.minScale ?? 0.4,
-//       labelData.maxScale ?? 2.0,
-//       labelData.minSizeDistance ?? 50
-//     );
-//     labels.set(name, label);
-//   });
-
-//   return labels;
-// }
-
 async function bootstrap() {
   setMobileViewport();
   const sceneParams = getSceneParams();
@@ -471,11 +346,8 @@ async function bootstrap() {
   );
   await loadAssets(app, assets);
 
-  const screen = createScreen(app);
-
-  // Setup Camera & UI
+  // Setup Camera
   const camera = createCamera(app, elementsData.camera, sceneParams);
-  createOverlayUI(app, camera, sceneData, elementsData, sceneParams);
 
   // Setup Models
   const modelEntities = createModelEntities(app, sceneData.models, modelAssets);
@@ -486,32 +358,16 @@ async function bootstrap() {
     ...Object.fromEntries(splatEntities.map((entity) => [entity.name, entity])),
   });
 
-  createDebugPanel(app, sceneEntities);
+  const debugPanelSupported = Boolean(
+    elementsData.ui?.debugPanel?.visibleInModes?.length,
+  );
+  if (debugPanelSupported) createDebugPanel(app, sceneEntities);
+
+  // Setup UI after all persistent scene elements exist so mode changes can toggle them in place.
+  createOverlayUI(app, camera, sceneData, elementsData, sceneParams);
 
   // Setup Environment (Light)
   setupSceneEnvironment(app);
-
-  // Setup Portals, Viewpoints & Labels
-  // const portalEntities = createPortalEntities(app, camera, screen, sceneData, portalAssets, sceneParams.lod);
-  // const viewpointEntities = createViewpointEntities(app, camera, screen, sceneData, viewpointAssets);
-  // const labels = createLabels(app, camera, screen, assets.font, sceneData);
-
-  // Scene Context Exposure for External Plugins
-  // (app as any).sceneContext = {
-  //   camera, labels, viewpointEntities, portalEntities,
-  //   portals: portalEntities, modelEntities, sceneData, screen,
-  //   createFloatingText: (
-  //     text: string, pos: pc.Vec3, fontSize: number, color: pc.Color, bgColor: pc.Color
-  //   ) => createFloatingText(app, camera, screen, assets.font, text, pos, fontSize, color, bgColor),
-  // };
-
-  // Load Custom Scene Scripts
-  // if (sceneData.scripts) {
-  //   const scriptAssets = sceneData.scripts.map(
-  //     (url, i) => new pc.Asset(`custom-script-${i}`, "script", { url })
-  //   );
-  //   await loadAssets(app, scriptAssets);
-  // }
 }
 
 bootstrap().catch((err) => console.error("Initialization error:", err));

@@ -1,24 +1,30 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>PlayCanvas App</title>
   </head>
   <body>
-    <!-- Mobile Menu Toggle -->
-    <div id="mobile-menu-btn">☰</div>
+    <!-- Display mode navigation -->
+    <nav id="mode-menu" aria-label="Display mode">
+      <button id="mode-menu-button" type="button"></button>
+    </nav>
 
     <!-- UI Dropdown Container -->
     <div id="ui-container">
       <!-- Hidden by default, shown if sceneData has viewpoints -->
-      <select id="viewpoint-select" class="styled-select" style="display: none;"></select>
+      <select
+        id="viewpoint-select"
+        class="styled-select"
+        style="display: none"
+      ></select>
       <select id="lod-select" class="styled-select"></select>
       <select id="render-select" class="styled-select"></select>
     </div>
 
     <!-- Logos -->
-    <div id="top-right-logo-container">
-    </div>
+    <div id="top-right-logo-container"></div>
 
     <!-- Boot the App -->
     <script type="module" src="/src/main.ts"></script>
