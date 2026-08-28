@@ -35,9 +35,15 @@ export interface CameraData {
   lookAt: [number, number, number];
 }
 
+export interface GroupData {
+  elements: string[];
+  enabled: boolean;
+}
+
 export interface ElementsData {
   logos?: LogoData[];
   camera?: CameraData;
+  groups?: Record<string, GroupData>;
 }
 
 export interface LabelData {
@@ -86,7 +92,8 @@ export interface ViewpointData {
   minSizeDistance?: number;
   targetPosition: [number, number, number];
   targetLookAt: [number, number, number];
-}export interface LabelWrapperEntity extends pc.Entity {
+}
+export interface LabelWrapperEntity extends pc.Entity {
   setText: (newString: string) => void;
 }
 

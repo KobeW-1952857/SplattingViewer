@@ -2,7 +2,13 @@
 import "./style.css";
 import * as pc from "playcanvas";
 import { setMobileViewport, getSceneParams, toUrlPath } from "./utils";
-import { ModelData, SceneData, LabelWrapperEntity, ElementsData } from "./types";
+import {
+  ModelData,
+  SceneData,
+  LabelWrapperEntity,
+  ElementsData,
+  GroupData,
+} from "./types";
 import { createCamera, smoothCameraMove } from "./camera";
 import { createOverlayUI } from "./ui";
 import {
@@ -15,9 +21,14 @@ import {
 window.pc = pc;
 
 /** Wraps AssetListLoader in a promise so it can be awaited. */
-function loadAssets(app: pc.Application, assets: pc.Asset[] | Record<string, pc.Asset>): Promise<void> {
+function loadAssets(
+  app: pc.Application,
+  assets: pc.Asset[] | Record<string, pc.Asset>,
+): Promise<void> {
   const list = Array.isArray(assets) ? assets : Object.values(assets);
-  return new Promise((resolve) => new pc.AssetListLoader(list, app.assets).load(resolve));
+  return new Promise((resolve) =>
+    new pc.AssetListLoader(list, app.assets).load(resolve),
+  );
 }
 
 function createApp(): { app: pc.Application; canvas: HTMLCanvasElement } {
@@ -30,7 +41,10 @@ function createApp(): { app: pc.Application; canvas: HTMLCanvasElement } {
   const app = new pc.Application(canvas, {
     mouse,
     touch,
-    elementInput: new pc.ElementInput(canvas, { useMouse: true, useTouch: true }),
+    elementInput: new pc.ElementInput(canvas, {
+      useMouse: true,
+      useTouch: true,
+    }),
     graphicsDeviceOptions: { antialias: false },
   });
 
@@ -43,24 +57,33 @@ function createApp(): { app: pc.Application; canvas: HTMLCanvasElement } {
   return { app, canvas };
 }
 
-async function loadSceneData(app: pc.Application, sceneName: string): Promise<[string, SceneData, ElementsData]> {
+async function loadSceneData(
+  app: pc.Application,
+  sceneName: string,
+): Promise<[string, SceneData, ElementsData]> {
   const basePath = `Assets/Scenes/${sceneName}`;
-
 
   const assets = [
     new pc.Asset("scene-data", "json", {
-    url: `${basePath}/scene.json`,
-  }),
+      url: `${basePath}/scene.json`,
+    }),
     new pc.Asset("elements-data", "json", {
-    url: `${basePath}/elements.json`,
-  }),
-  ]
+      url: `${basePath}/elements.json`,
+    }),
+  ];
   await loadAssets(app, assets);
-  return [basePath, assets[0].resource as SceneData, assets[1].resource as ElementsData];
+  return [
+    basePath,
+    assets[0].resource as SceneData,
+    assets[1].resource as ElementsData,
+  ];
 }
 
 /** Builds the map of assets to load (splat model, font, portal images, viewpoint icons, obj/glb models). */
-function buildAssetMap(basePath: string, sceneData: SceneData): {
+function buildAssetMap(
+  basePath: string,
+  sceneData: SceneData,
+): {
   assets: Record<string, pc.Asset>;
   splatAssets: pc.Asset[];
   modelAssets: pc.Asset[];
@@ -74,26 +97,33 @@ function buildAssetMap(basePath: string, sceneData: SceneData): {
     const splatAsset = new pc.Asset(
       splatDef.name || `splat-${index}`,
       "gsplat",
-      { url: `${basePath}/${toUrlPath(splatDef.path)}` } // Will fail, path currently relative to scene.json file, not to Assets folder
+      { url: `${basePath}/${toUrlPath(splatDef.path)}` }, // Will fail, path currently relative to scene.json file, not to Assets folder
     );
 
     splatAsset.on("error", (err: unknown) => {
-      console.error(`Error loading splat asset: ${splatAsset.name}, URL: ${splatAsset.getFileUrl()}`, err);
-    })
+      console.error(
+        `Error loading splat asset: ${splatAsset.name}, URL: ${splatAsset.getFileUrl()}`,
+        err,
+      );
+    });
 
     assets[`splat-${index}`] = splatAsset;
     splatAssets.push(splatAsset);
   });
-  
 
   const modelAssets: pc.Asset[] = [];
   sceneData.models?.forEach((modelDef, index) => {
     const ext = pc.path.getExtension(modelDef.path).toLowerCase();
     const type = ext === ".glb" || ext === ".gltf" ? "container" : "model";
-    const modelAsset = new pc.Asset(modelDef.name || `model-${index}`, type, { url: `${basePath}/${toUrlPath(modelDef.path)}` });
+    const modelAsset = new pc.Asset(modelDef.name || `model-${index}`, type, {
+      url: `${basePath}/${toUrlPath(modelDef.path)}`,
+    });
 
     modelAsset.on("error", (err: unknown) => {
-      console.error(`Error loading model asset: ${modelAsset.name}, URL: ${modelAsset.getFileUrl()}`, err);
+      console.error(
+        `Error loading model asset: ${modelAsset.name}, URL: ${modelAsset.getFileUrl()}`,
+        err,
+      );
     });
 
     assets[`model-${index}`] = modelAsset;
@@ -119,7 +149,7 @@ function applyEntityTransform(
   entity: pc.Entity,
   position: number[] | undefined,
   rotation: number[] | undefined,
-  scale: number[] | undefined
+  scale: number[] | undefined,
 ): void {
   const p = position || [0, 0, 0];
   entity.setLocalPosition(p[0], p[1], p[2]);
@@ -138,7 +168,7 @@ function applyEntityTransform(
 function createModelEntities(
   app: pc.Application,
   models: ModelData[] | undefined,
-  objModelAssets: pc.Asset[]
+  objModelAssets: pc.Asset[],
 ): pc.Entity[] {
   const modelEntities: pc.Entity[] = [];
 
@@ -154,7 +184,12 @@ function createModelEntities(
       entity.addComponent("model", { asset });
     }
 
-    applyEntityTransform(entity, modelDef.position, modelDef.rotation, modelDef.scale);
+    applyEntityTransform(
+      entity,
+      modelDef.position,
+      modelDef.rotation,
+      modelDef.scale,
+    );
     entity.rotateLocal(0, 90, 0);
 
     app.root.addChild(entity);
@@ -167,7 +202,7 @@ function createModelEntities(
 function createSplatEntities(
   app: pc.Application,
   sceneData: SceneData,
-  splatAssets: pc.Asset[]
+  splatAssets: pc.Asset[],
 ): pc.Entity[] {
   const splatEntities: pc.Entity[] = [];
 
@@ -189,10 +224,52 @@ function createSplatEntities(
   return splatEntities;
 }
 
-function createDebugPanel(entities: Record<string, pc.Entity>): void {
+function createEntityHierarchy(
+  app: pc.Application,
+  groups: Record<string, GroupData> | undefined,
+  entities: Record<string, pc.Entity>,
+): Record<string, pc.Entity> {
+  if (!groups) {
+    return entities;
+  }
+
+  const groupEntities: Record<string, pc.Entity> = {};
+
+  Object.entries(groups).forEach(([groupName, groupData]) => {
+    const groupEntity = new pc.Entity(groupName);
+    groupEntity.enabled = groupData.enabled;
+    app.root.addChild(groupEntity);
+    groupEntities[groupName] = groupEntity;
+  });
+
+  Object.entries(groups).forEach(([groupName, groupData]) => {
+    const groupEntity = groupEntities[groupName];
+
+    groupData.elements.forEach((elementName) => {
+      const entity = entities[elementName];
+      if (!entity) {
+        console.warn(
+          `Group "${groupName}" references missing entity "${elementName}"`,
+        );
+        return;
+      }
+
+      groupEntity.addChild(entity);
+    });
+  });
+
+  return { ...entities, ...groupEntities };
+}
+
+function createDebugPanel(
+  app: pc.Application,
+  entities: Record<string, pc.Entity>,
+): void {
   (window as any).sceneEntities = entities;
-  console.log("Scene entities exposed on window.sceneEntities - e.g. sceneEntities['GrassClump4'].enabled = false");
- 
+  console.log(
+    "Scene entities exposed on window.sceneEntities - e.g. sceneEntities['GrassClump4'].enabled = false",
+  );
+
   const panel = document.createElement("div");
   panel.id = "debug-panel";
   panel.style.cssText = `
@@ -208,30 +285,64 @@ function createDebugPanel(entities: Record<string, pc.Entity>): void {
     padding: 10px 12px;
     border-radius: 6px;
   `;
- 
+
   const title = document.createElement("div");
   title.textContent = "Scene Entities";
   title.style.cssText = "font-weight: bold; margin-bottom: 6px;";
   panel.appendChild(title);
- 
-  Object.entries(entities).forEach(([name, entity]) => {
+
+  const sceneEntities = new Set(Object.values(entities));
+  type PanelNode = {
+    entity: pc.Entity;
+    checkbox: HTMLInputElement;
+    children: PanelNode[];
+  };
+
+  const updateNodeState = (node: PanelNode, parentEnabled: boolean): void => {
+    node.checkbox.disabled = !parentEnabled;
+    node.checkbox.checked = node.entity.enabled;
+
+    const enabled = parentEnabled && node.entity.enabled;
+    node.children.forEach((child) => updateNodeState(child, enabled));
+  };
+
+  const appendEntityRow = (entity: pc.Entity, depth: number): PanelNode => {
     const row = document.createElement("label");
-    row.style.cssText = "display: flex; align-items: center; gap: 6px; margin-bottom: 4px; cursor: pointer;";
- 
+    row.style.cssText =
+      `display: flex; align-items: center; gap: 6px; margin-bottom: 4px; ` +
+      `padding-left: ${depth * 16}px; cursor: pointer;`;
+
     const checkbox = document.createElement("input");
     checkbox.type = "checkbox";
     checkbox.checked = entity.enabled;
-    checkbox.addEventListener("change", () => {
-      entity.enabled = checkbox.checked;
-    });
- 
+
     const label = document.createElement("span");
-    label.textContent = name;
- 
+    label.textContent = entity.name;
+
     row.append(checkbox, label);
     panel.appendChild(row);
-  });
- 
+
+    const node: PanelNode = { entity, checkbox, children: [] };
+    checkbox.addEventListener("change", () => {
+      entity.enabled = checkbox.checked;
+      updateNodeState(node, entity.parent?.enabled ?? true);
+    });
+
+    node.children = entity.children
+      .filter((child): child is pc.Entity =>
+        sceneEntities.has(child as pc.Entity),
+      )
+      .map((child) => appendEntityRow(child, depth + 1));
+
+    return node;
+  };
+
+  const rootNodes = Array.from(sceneEntities)
+    .filter((entity) => entity.parent === app.root)
+    .map((entity) => appendEntityRow(entity, 0));
+
+  rootNodes.forEach((node) => updateNodeState(node, true));
+
   document.body.appendChild(panel);
 }
 
@@ -348,9 +459,16 @@ async function bootstrap() {
 
   const { app } = createApp();
 
-  const [basePath, sceneData, elementsData] = await loadSceneData(app, sceneParams.scene);
+  const [basePath, sceneData, elementsData] = await loadSceneData(
+    app,
+    sceneParams.scene,
+  );
+  console.log("Loaded scene data:", sceneData, elementsData);
 
-  const { assets, splatAssets, modelAssets } = buildAssetMap(basePath, sceneData);
+  const { assets, splatAssets, modelAssets } = buildAssetMap(
+    basePath,
+    sceneData,
+  );
   await loadAssets(app, assets);
 
   const screen = createScreen(app);
@@ -363,10 +481,12 @@ async function bootstrap() {
   const modelEntities = createModelEntities(app, sceneData.models, modelAssets);
   const splatEntities = createSplatEntities(app, sceneData, splatAssets);
 
-  createDebugPanel({
-    ...Object.fromEntries(modelEntities.map((e) => [e.name, e])),
-    ...Object.fromEntries(splatEntities.map((e) => [e.name, e])),
+  const sceneEntities = createEntityHierarchy(app, elementsData.groups, {
+    ...Object.fromEntries(modelEntities.map((entity) => [entity.name, entity])),
+    ...Object.fromEntries(splatEntities.map((entity) => [entity.name, entity])),
   });
+
+  createDebugPanel(app, sceneEntities);
 
   // Setup Environment (Light)
   setupSceneEnvironment(app);
