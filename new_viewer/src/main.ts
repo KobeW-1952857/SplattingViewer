@@ -42,6 +42,9 @@ function createApp(): { app: pc.Application; canvas: HTMLCanvasElement } {
     graphicsDeviceOptions: { antialias: false },
   });
 
+  // Re-evaluate splat LOD while rotating instead of waiting for camera movement.
+  app.scene.gsplat.lodUpdateAngle = 1;
+
   app.setCanvasFillMode(pc.FILLMODE_FILL_WINDOW);
   app.setCanvasResolution(pc.RESOLUTION_AUTO);
   app.start();
