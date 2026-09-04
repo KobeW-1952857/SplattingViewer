@@ -75,9 +75,11 @@ export interface LabelData {
 }
 
 export interface SceneData {
+  name?: string;
   viewpoints?: ViewpointData[];
   splats?: SplatData[];
   models?: ModelData[];
+  moveSpeed?: number;
 }
 
 export interface PortalData {

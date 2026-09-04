@@ -23,7 +23,7 @@ export function getSceneParams(): SceneParams {
   lod = Math.max(0, Math.min(3, isNaN(lod) ? 3 : lod));
 
   return {
-    scene: params.get("scene") || "Krakauplein",
+    scene: params.get("scene") || "",
     hasCamArgs: params.has("cx"),
     camPos: new pc.Vec3(
       parseFloat(params.get("cx") || "0"),

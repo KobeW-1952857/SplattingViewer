@@ -175,7 +175,7 @@ function createModelEntities(
       modelDef.rotation,
       modelDef.scale,
     );
-    entity.rotateLocal(0, 90, 0);
+    // entity.rotateLocal(0, 90, 0);
 
     app.root.addChild(entity);
     modelEntities.push(entity);
@@ -197,10 +197,10 @@ function createSplatEntities(
     entity.addComponent("gsplat", { asset, unified: true });
 
     const scale = splatDef.scale ? [...splatDef.scale] : [1, 1, 1];
-    scale[2] = -scale[2];
+    // scale[2] = -scale[2];
 
     applyEntityTransform(entity, splatDef.position, splatDef.rotation, scale);
-    entity.rotateLocal(180, -90, 0);
+    // entity.rotateLocal(180, -90, 0);
 
     app.root.addChild(entity);
     splatEntities.push(entity);
@@ -331,9 +331,85 @@ function createDebugPanel(
   document.body.appendChild(panel);
 }
 
+async function showSceneSelection() {
+  const sceneModules = import.meta.glob("/public/Assets/Scenes/*/scene.json");
+  const folders = Object.keys(sceneModules).map((path) => {
+    const parts = path.split("/");
+    return parts[parts.length - 2];
+  });
+
+  const scenes = await Promise.all(
+    folders.map(async (folder) => {
+      try {
+        const response = await fetch(`Assets/Scenes/${folder}/scene.json`);
+        if (response.ok) {
+          const data = await response.json();
+          return { folder, name: data.name || folder };
+        }
+      } catch (e) {
+        console.warn("Failed to load scene data for", folder);
+      }
+      return { folder, name: folder };
+    }),
+  );
+
+  const container = document.createElement("div");
+  container.className = "scene-selection-container";
+
+  const title = document.createElement("h1");
+  title.textContent = "Select a Scene";
+  container.appendChild(title);
+
+  const buttonContainer = document.createElement("div");
+  buttonContainer.className = "scene-buttons";
+
+  scenes.forEach((scene) => {
+    const btn = document.createElement("button");
+    btn.className = "scene-button";
+    btn.onclick = () => {
+      window.location.href = `/?scene=${encodeURIComponent(scene.folder)}`;
+    };
+
+    const img = document.createElement("img");
+    img.className = "scene-image";
+    img.src = `Assets/Scenes/${scene.folder}/preview.png`;
+    img.onerror = () => {
+      if (img.src.endsWith("preview.png")) {
+        img.src = `Assets/Scenes/${scene.folder}/preview.jpg`;
+      } else if (img.src.endsWith("preview.jpg")) {
+        img.src =
+          'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="300" height="200"><rect width="100%" height="100%" fill="%23ddd"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="20px" fill="%23777">No Preview</text></svg>';
+        img.onerror = null;
+      }
+    };
+    img.alt = scene.name;
+
+    const label = document.createElement("span");
+    label.className = "scene-label";
+    label.textContent = scene.name;
+
+    btn.appendChild(img);
+    btn.appendChild(label);
+    buttonContainer.appendChild(btn);
+  });
+
+  container.appendChild(buttonContainer);
+  document.body.appendChild(container);
+
+  const uiContainer = document.getElementById("ui-container");
+  if (uiContainer) uiContainer.style.display = "none";
+  const modeMenu = document.getElementById("mode-menu");
+  if (modeMenu) modeMenu.style.display = "none";
+}
+
 async function bootstrap() {
   setMobileViewport();
   const sceneParams = getSceneParams();
+
+  if (!sceneParams.scene) {
+    showSceneSelection();
+    return;
+  }
 
   const { app } = createApp();
 
@@ -350,7 +426,7 @@ async function bootstrap() {
   await loadAssets(app, assets);
 
   // Setup Camera
-  const camera = createCamera(app, elementsData.camera, sceneParams);
+  const camera = createCamera(app, sceneData, elementsData.camera, sceneParams);
 
   // Setup Models
   const modelEntities = createModelEntities(app, sceneData.models, modelAssets);

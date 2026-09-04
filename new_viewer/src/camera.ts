@@ -6,7 +6,7 @@ import { CameraControlsInstance, CameraData, SceneData, SceneParams } from "./ty
 // Add a flag to prevent double-registration warnings
 let isRegistered = false;
 
-export function createCamera(app: pc.Application, camera_data: CameraData | undefined, sceneParams: SceneParams): pc.Entity {
+export function createCamera(app: pc.Application, sceneData: SceneData, camera_data: CameraData | undefined, sceneParams: SceneParams): pc.Entity {
   // 1. Register the script HERE, ensuring the app already exists
   if (!isRegistered) {
     pc.registerScript(CameraControls, "cameraControls");
@@ -18,9 +18,13 @@ export function createCamera(app: pc.Application, camera_data: CameraData | unde
   camera.addComponent("script");
 
   const controls = camera.script!.create("cameraControls") as unknown as CameraControlsInstance;
+  if (camera_data && camera_data.moveSpeed !== undefined) {
+    controls.moveSpeed = camera_data.moveSpeed;
+  }
   setCameraControlSettings(controls);
 
   app.root.addChild(camera);
+
 
   let c_p =  camera_data?.position || [1.0, 2.5, 0.0];
   let c_la = camera_data?.lookAt || [1.0, 2.5, 0.0];
@@ -64,7 +68,12 @@ export function smoothCameraMove(
   targetPos: pc.Vec3,
   targetLookAt: pc.Vec3
 ): void {
+  let currentSpeed = 10;
   if (camera.script && camera.script.has("cameraControls")) {
+    const oldControls = (camera.script as any).cameraControls;
+    if (oldControls && oldControls.moveSpeed !== undefined) {
+      currentSpeed = oldControls.moveSpeed;
+    }
     camera.script.destroy("cameraControls");
   }
 
@@ -81,8 +90,10 @@ export function smoothCameraMove(
   camera.syncHierarchy();
 
   if (newControls) {
+    newControls.moveSpeed = currentSpeed;
     setCameraControlSettings(newControls);
     camera.lookAt(targetLookAt);
+
     
     const angles = camera.getEulerAngles();
     newControls.look(targetLookAt, false);
@@ -110,4 +121,32 @@ function setupCameraKeyBindings(camera: pc.Entity): void {
       console.log("-----------------------------------");
     }
   });
+
+  window.addEventListener("wheel", (event) => {
+    const scriptComp = camera.script as any;
+    if (scriptComp && scriptComp.cameraControls) {
+      const controls = scriptComp.cameraControls as CameraControlsInstance;
+      const factor = event.deltaY > 0 ? 0.9 : 1.1;
+      controls.moveSpeed = Math.max(0.1, Math.min(1000, controls.moveSpeed * factor));
+      controls.moveSlowSpeed = controls.moveSpeed * 0.5;
+      controls.moveFastSpeed = controls.moveSpeed * 2;
+      
+      // Optional: show a quick UI toast for the speed
+      let toast = document.getElementById("speed-toast");
+      if (!toast) {
+        toast = document.createElement("div");
+        toast.id = "speed-toast";
+        toast.style.cssText = "position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.7);color:white;padding:8px 16px;border-radius:4px;font-family:sans-serif;pointer-events:none;z-index:9999;transition:opacity 0.3s;opacity:1;";
+        document.body.appendChild(toast);
+      }
+      toast.textContent = `Camera Speed: ${controls.moveSpeed.toFixed(1)}`;
+      toast.style.opacity = "1";
+      
+      // Clear previous timeout and set new one
+      if ((window as any)._speedToastTimeout) clearTimeout((window as any)._speedToastTimeout);
+      (window as any)._speedToastTimeout = setTimeout(() => {
+        if (toast) toast.style.opacity = "0";
+      }, 1500);
+    }
+  }, { passive: true });
 }

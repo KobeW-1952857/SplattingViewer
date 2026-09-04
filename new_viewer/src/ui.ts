@@ -189,6 +189,13 @@ export function createOverlayUI(
   elementsData: ElementsData,
   sceneParams: SceneParams,
 ): void {
+  const backButton = document.getElementById("back-button");
+  if (backButton) {
+    backButton.addEventListener("click", () => {
+      window.location.href = "/";
+    });
+  }
+
   const applyMode = (mode: SceneParams["mode"]): void => {
     sceneParams.mode = mode;
 
