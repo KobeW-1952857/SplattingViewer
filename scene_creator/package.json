@@ -1,0 +1,22 @@
+{
+  "name": "scene_creator",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "typescript": "~6.0.2",
+    "vite": "^8.2.2"
+  },
+  "dependencies": {
+    "@playcanvas/splat-transform": "^3.3.3",
+    "@types/file-saver": "^2.0.7",
+    "file-saver": "^2.0.5",
+    "jszip": "^3.10.1",
+    "playcanvas": "^2.22.0"
+  }
+}

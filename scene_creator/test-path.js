@@ -1,0 +1,1 @@
+const pc = require('./node_modules/playcanvas/build/playcanvas.js'); console.log(pc.path.getDirectory('mem://splat-1234/lod-meta.json')); console.log(pc.path.getBasename('mem://splat-1234/lod-meta.json'));

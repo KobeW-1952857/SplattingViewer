@@ -17,6 +17,10 @@ export interface SplatData {
   position?: [number, number, number];
   rotation?: [number, number, number] | [number, number, number, number];
   scale?: [number, number, number];
+  lodFalloff?: number;
+  lodRangeMin?: number;
+  lodRangeMax?: number;
+  lodDistances?: number[];
 }
 
 export interface ModelData {
@@ -35,6 +39,7 @@ export interface LogoData {
 export interface CameraData {
   position: [number, number, number];
   lookAt: [number, number, number];
+  moveSpeed?: number;
 }
 
 export interface GroupData {
@@ -126,3 +131,4 @@ declare global {
     pc: typeof pc;
   }
 }
+

@@ -194,13 +194,23 @@ function createSplatEntities(
   sceneData.splats?.forEach((splatDef, index) => {
     const asset = splatAssets[index];
     const entity = new pc.Entity(splatDef.name || `Splat-${index}`);
-    entity.addComponent("gsplat", { asset, unified: true });
+
+    const gsplatOptions: any = { asset, unified: true };
+    if (splatDef.lodFalloff !== undefined)
+      gsplatOptions.lodFalloff = splatDef.lodFalloff;
+    if (splatDef.lodRangeMin !== undefined)
+      gsplatOptions.lodRangeMin = splatDef.lodRangeMin;
+    if (splatDef.lodRangeMax !== undefined)
+      gsplatOptions.lodRangeMax = splatDef.lodRangeMax;
+
+    const gsplat = entity.addComponent(
+      "gsplat",
+      gsplatOptions,
+    ) as pc.GSplatComponent;
 
     const scale = splatDef.scale ? [...splatDef.scale] : [1, 1, 1];
-    // scale[2] = -scale[2];
 
     applyEntityTransform(entity, splatDef.position, splatDef.rotation, scale);
-    // entity.rotateLocal(180, -90, 0);
 
     app.root.addChild(entity);
     splatEntities.push(entity);
