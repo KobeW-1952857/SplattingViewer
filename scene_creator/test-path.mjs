@@ -1,1 +1,0 @@
-import { path } from './node_modules/playcanvas/build/playcanvas.js'; console.log(path.getDirectory('mem://splat-1234/lod-meta.json')); console.log(path.getBasename('mem://splat-1234/lod-meta.json'));
