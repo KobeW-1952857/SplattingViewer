@@ -51,6 +51,52 @@ export function initEngine(canvas: HTMLCanvasElement) {
   state.app.scripts.add(CameraControls);
   const controls = state.cameraEntity.script!.create("cameraControls") as any;
 
+  // --- DYNAMIC SPLAT BUDGET (Strategy 1 + Strategy 3) ---
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  let currentSplatBudget = isMobile ? 1000000 : 3000000;
+  state.app.scene.gsplat.splatBudget = currentSplatBudget;
+  const budgetInput = document.getElementById("splat-budget") as HTMLInputElement;
+  if (budgetInput) budgetInput.value = currentSplatBudget.toString();
+
+  let timeSinceLastBudgetUpdate = 0;
+  let frameCount = 0;
+  let accumulatedDeltaTime = 0;
+
+  const MAX_BUDGET = 8000000; 
+  const MIN_BUDGET = 500000;
+  const BUDGET_STEP = 200000;
+
+  state.app.on("update", (dt: number) => {
+      timeSinceLastBudgetUpdate += dt;
+      accumulatedDeltaTime += dt;
+      frameCount++;
+
+      if (timeSinceLastBudgetUpdate > 1.5) {
+          currentSplatBudget = state.app!.scene.gsplat.splatBudget;
+          const averageFps = frameCount / accumulatedDeltaTime;
+          let changed = false;
+
+          if (averageFps > 55 && currentSplatBudget < MAX_BUDGET) {
+              currentSplatBudget = Math.min(MAX_BUDGET, currentSplatBudget + BUDGET_STEP);
+              state.app!.scene.gsplat.splatBudget = currentSplatBudget;
+              changed = true;
+          } else if (averageFps < 45 && currentSplatBudget > MIN_BUDGET) {
+              currentSplatBudget = Math.max(MIN_BUDGET, currentSplatBudget - (BUDGET_STEP * 2));
+              state.app!.scene.gsplat.splatBudget = currentSplatBudget;
+              changed = true;
+          }
+
+          if (changed && budgetInput && document.activeElement !== budgetInput) {
+              budgetInput.value = currentSplatBudget.toString();
+          }
+
+          timeSinceLastBudgetUpdate = 0;
+          frameCount = 0;
+          accumulatedDeltaTime = 0;
+      }
+  });
+  // ------------------------------------------------------
+
   setupGizmos(controls);
 }
 

@@ -85,7 +85,7 @@ export async function exportScene() {
   const progressOverlay = document.getElementById("export-overlay")!;
   const progressBar = document.getElementById("export-progress-bar")!;
   const progressText = document.getElementById("export-progress-text")!;
-  progressOverlay.style.display = "flex";
+  progressOverlay.classList.add("active");
 
   const content = await zip.generateAsync({ type: "blob" }, (metadata) => {
     progressBar.style.width = `${metadata.percent}%`;
@@ -95,7 +95,7 @@ export async function exportScene() {
   saveAs(content, `${sceneName}.zip`);
 
   setTimeout(() => {
-    progressOverlay.style.display = "none";
+    progressOverlay.classList.remove("active");
     progressBar.style.width = "0%";
     progressText.innerText = "Packaging files (0%)";
   }, 1000);

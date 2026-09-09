@@ -45,6 +45,49 @@ function createApp(): { app: pc.Application; canvas: HTMLCanvasElement } {
   // Re-evaluate splat LOD while rotating instead of waiting for camera movement.
   app.scene.gsplat.lodUpdateAngle = 1;
 
+  // --- DYNAMIC SPLAT BUDGET (Strategy 1 + Strategy 3) ---
+  const isMobile =
+    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+      navigator.userAgent,
+    );
+  let currentSplatBudget = isMobile ? 1000000 : 3000000;
+  app.scene.gsplat.splatBudget = currentSplatBudget;
+
+  let timeSinceLastBudgetUpdate = 0;
+  let frameCount = 0;
+  let accumulatedDeltaTime = 0;
+
+  const MAX_BUDGET = 8000000;
+  const MIN_BUDGET = 500000;
+  const BUDGET_STEP = 200000;
+
+  app.on("update", (dt) => {
+    timeSinceLastBudgetUpdate += dt;
+    accumulatedDeltaTime += dt;
+    frameCount++;
+
+    if (timeSinceLastBudgetUpdate > 1.5) {
+      const averageFps = frameCount / accumulatedDeltaTime;
+      if (averageFps > 55 && currentSplatBudget < MAX_BUDGET) {
+        currentSplatBudget = Math.min(
+          MAX_BUDGET,
+          currentSplatBudget + BUDGET_STEP,
+        );
+        app.scene.gsplat.splatBudget = currentSplatBudget;
+      } else if (averageFps < 45 && currentSplatBudget > MIN_BUDGET) {
+        currentSplatBudget = Math.max(
+          MIN_BUDGET,
+          currentSplatBudget - BUDGET_STEP * 2,
+        );
+        app.scene.gsplat.splatBudget = currentSplatBudget;
+      }
+      timeSinceLastBudgetUpdate = 0;
+      frameCount = 0;
+      accumulatedDeltaTime = 0;
+    }
+  });
+  // ------------------------------------------------------
+
   app.setCanvasFillMode(pc.FILLMODE_FILL_WINDOW);
   app.setCanvasResolution(pc.RESOLUTION_AUTO);
   app.start();

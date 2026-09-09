@@ -176,3 +176,198 @@
         pointer-events: auto;
         cursor: pointer;
       }
+
+/* Extracted from index.html inline styles */
+.subtitle {
+  font-size: 12px;
+  color: #aaa;
+  margin-top: -10px;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.btn-blue {
+  background: #2196f3;
+}
+.btn-blue:hover {
+  background: #1976d2;
+}
+
+.mb-8 {
+  margin-bottom: 8px;
+}
+.mt-neg-8 {
+  margin-top: -8px;
+}
+.mt-auto {
+  margin-top: auto;
+}
+.mt-10 {
+  margin-top: 10px;
+}
+
+.logo-list-container {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.setting-label {
+  font-size: 12px;
+  margin-bottom: 4px;
+  color: #888;
+  display: block;
+}
+
+.setting-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 4px;
+  border: 1px solid #555;
+  background: #222;
+  color: #fff;
+  border-radius: 4px;
+}
+
+.splat-settings-panel {
+  margin-top: 16px;
+  border-top: 1px solid #444;
+  padding-top: 16px;
+}
+
+.lod-distances-container {
+  margin-top: 12px;
+}
+
+.lod-distances-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.scene-name-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 6px;
+  background: #444;
+  border: 1px solid #555;
+  color: white;
+  border-radius: 4px;
+}
+
+.export-overlay {
+  display: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  z-index: 1000;
+  color: white;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.export-overlay.active {
+  display: flex !important;
+}
+
+.progress-bar-container {
+  width: 300px;
+  height: 20px;
+  background: #333;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-top: 20px;
+}
+
+.progress-bar {
+  width: 0%;
+  height: 100%;
+  background: #4caf50;
+  transition: width 0.1s;
+}
+
+/* Extracted from ui.ts inline styles */
+.logo-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 8px;
+  padding: 8px;
+  background: rgba(0,0,0,0.2);
+}
+.logo-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.logo-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.logo-reorder {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 10px;
+}
+.logo-reorder button {
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  padding: 0;
+  width: auto;
+}
+.logo-reorder button.disabled {
+  opacity: 0.3;
+  pointer-events: none;
+}
+.logo-delete {
+  color: #f44336;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 16px;
+}
+.logo-input-field {
+  padding: 4px;
+  width: 100%;
+  box-sizing: border-box;
+  background: #444;
+  border: 1px solid #555;
+  color: white;
+  border-radius: 3px;
+}
+
+.asset-item-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.asset-name-span {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.asset-delete-btn {
+  color: #f44336;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 16px;
+  padding: 0 4px;
+}
+.lod-distance-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.lod-distance-label {
+  width: 40px;
+  font-size: 12px;
+  color: #ccc;
+}

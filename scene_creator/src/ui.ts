@@ -36,9 +36,21 @@ const sclInputs = ["x", "y", "z"].map(
 const splatSettingsPanel = document.getElementById(
   "splat-settings-panel",
 ) as HTMLDivElement;
+const splatCountDisplay = document.getElementById(
+  "splat-count-display",
+) as HTMLElement;
+const debugModeSelect = document.getElementById(
+  "splat-debug-mode",
+) as HTMLSelectElement;
+const splatBudgetInput = document.getElementById(
+  "splat-budget",
+) as HTMLInputElement;
 const lodFalloffInput = document.getElementById(
   "splat-lod-falloff",
 ) as HTMLInputElement;
+const lodFalloffValueDisplay = document.getElementById(
+  "splat-lod-falloff-value",
+) as HTMLElement;
 const lodMinInput = document.getElementById(
   "splat-lod-min",
 ) as HTMLInputElement;
@@ -83,6 +95,41 @@ export function setupUI() {
     input.onchange = applySplatSettings;
     input.oninput = applySplatSettings;
   });
+
+  if (state.app && (state.app.scene as any).gsplat) {
+    splatBudgetInput.value = (
+      (state.app.scene as any).gsplat.splatBudget ?? 3000000
+    ).toString();
+  }
+
+  const debugLegend = document.getElementById("splat-debug-legend");
+
+  debugModeSelect.onchange = () => {
+    if (!state.app || !(state.app.scene as any).gsplat) return;
+    const val = debugModeSelect.value;
+    let mode: any = (pc as any).GSPLAT_DEBUG_NONE;
+    if (val === "lod") mode = (pc as any).GSPLAT_DEBUG_LOD;
+    else if (val === "aabbs") mode = (pc as any).GSPLAT_DEBUG_AABBS;
+    else if (val === "node_aabbs") mode = (pc as any).GSPLAT_DEBUG_NODE_AABBS;
+
+    (state.app.scene as any).gsplat.debug = mode;
+
+    if (debugLegend) {
+      if (val !== "none") {
+        debugLegend.classList.remove("hidden");
+      } else {
+        debugLegend.classList.add("hidden");
+      }
+    }
+  };
+
+  splatBudgetInput.onchange = () => {
+    if (!state.app || !(state.app.scene as any).gsplat) return;
+    const val = parseInt(splatBudgetInput.value, 10);
+    if (!isNaN(val)) {
+      (state.app.scene as any).gsplat.splatBudget = val;
+    }
+  };
 
   setupEvents();
   setupGizmoTools();
@@ -192,28 +239,20 @@ export function renderLogoList() {
 
   state.logos.forEach((logo, i) => {
     const li = document.createElement("li");
-    li.className = "asset-item";
-    li.style.display = "flex";
-    li.style.flexDirection = "column";
-    li.style.gap = "4px";
-    li.style.marginBottom = "8px";
-    li.style.padding = "8px";
-    li.style.background = "rgba(0,0,0,0.2)";
+    li.className = "asset-item logo-item";
 
     const header = document.createElement("div");
-    header.style.display = "flex";
-    header.style.justifyContent = "space-between";
-    header.style.alignItems = "center";
+    header.className = "logo-item-header";
 
     header.innerHTML = `
-      <div style="display:flex; align-items:center; gap:8px;">
-        <div style="display:flex; flex-direction:column; gap:2px; font-size:10px;">
-          <button class="reorder-up" style="background:none; border:none; color:white; cursor:pointer; padding:0; ${i === 0 ? "opacity:0.3; pointer-events:none;" : ""}">▲</button>
-          <button class="reorder-down" style="background:none; border:none; color:white; cursor:pointer; padding:0; ${i === state.logos.length - 1 ? "opacity:0.3; pointer-events:none;" : ""}">▼</button>
+      <div class="logo-controls">
+        <div class="logo-reorder">
+          <button class="reorder-up ${i === 0 ? "disabled" : ""}">▲</button>
+          <button class="reorder-down ${i === state.logos.length - 1 ? "disabled" : ""}">▼</button>
         </div>
         <strong style="word-break:break-all;">${logo.file.name}</strong>
       </div>
-      <span style="color:#f44336;cursor:pointer;font-weight:bold;font-size:16px;">&times;</span>
+      <span class="logo-delete">&times;</span>
     `;
 
     if (i > 0) {
@@ -246,7 +285,7 @@ export function renderLogoList() {
     linkInput.type = "text";
     linkInput.placeholder = "Link URL (https://...)";
     linkInput.value = logo.link;
-    linkInput.style.padding = "4px";
+    linkInput.className = "logo-input-field";
     linkInput.onchange = (e) => {
       logo.link = (e.target as HTMLInputElement).value;
       updateViewportLogo();
@@ -256,7 +295,7 @@ export function renderLogoList() {
     altInput.type = "text";
     altInput.placeholder = "Alt text";
     altInput.value = logo.alt;
-    altInput.style.padding = "4px";
+    altInput.className = "logo-input-field";
     altInput.onchange = (e) => {
       logo.alt = (e.target as HTMLInputElement).value;
       updateViewportLogo();
@@ -305,25 +344,16 @@ export function renderAssetList() {
   state.assets.forEach((a, i) => {
     const li = document.createElement("li");
     li.className =
-      "asset-item" + (i === state.selectedAssetIndex ? " selected" : "");
-    li.style.display = "flex";
-    li.style.justifyContent = "space-between";
-    li.style.alignItems = "center";
+      "asset-item asset-item-container" +
+      (i === state.selectedAssetIndex ? " selected" : "");
 
     const nameSpan = document.createElement("span");
     nameSpan.textContent = a.name;
-    nameSpan.style.flex = "1";
-    nameSpan.style.overflow = "hidden";
-    nameSpan.style.textOverflow = "ellipsis";
-    nameSpan.style.whiteSpace = "nowrap";
+    nameSpan.className = "asset-name-span";
 
     const deleteBtn = document.createElement("span");
     deleteBtn.innerHTML = "&times;";
-    deleteBtn.style.color = "#f44336";
-    deleteBtn.style.cursor = "pointer";
-    deleteBtn.style.fontWeight = "bold";
-    deleteBtn.style.fontSize = "16px";
-    deleteBtn.style.padding = "0 4px";
+    deleteBtn.className = "asset-delete-btn";
 
     deleteBtn.onclick = (e) => {
       e.stopPropagation();
@@ -354,13 +384,13 @@ function selectAsset(index: number) {
   state.selectedAssetIndex = index;
   renderAssetList();
   if (index >= 0) {
-    transformPanel.style.display = "block";
+    transformPanel.classList.remove("hidden");
     assetNameInput.value = state.assets[index].name;
     updateTransformUI();
     if (state.activeGizmo)
       state.activeGizmo.attach([state.assets[index].entity]);
   } else {
-    transformPanel.style.display = "none";
+    transformPanel.classList.add("hidden");
     if (state.activeGizmo) state.activeGizmo.detach();
   }
 }
@@ -376,6 +406,8 @@ const applySplatSettings = () => {
     if (!isNaN(falloff)) {
       a.lodFalloff = falloff;
       (a.entity as any).gsplat.lodFalloff = falloff;
+      if (lodFalloffValueDisplay)
+        lodFalloffValueDisplay.textContent = falloff.toFixed(1);
     }
     if (!isNaN(min)) {
       a.lodRangeMin = min;
@@ -408,12 +440,27 @@ export function updateTransformUI() {
   sclInputs[2].value = s.z.toFixed(3);
 
   if (a.type === "splat" && (a.entity as any).gsplat) {
-    splatSettingsPanel.style.display = "block";
-    lodFalloffInput.value = (
-      a.lodFalloff ??
-      (a.entity as any).gsplat.lodFalloff ??
-      1
-    ).toString();
+    splatSettingsPanel.classList.remove("hidden");
+
+    let splatCount = 0;
+    try {
+      const gsplatComponent = (a.entity as any).gsplat;
+      const resource =
+        gsplatComponent?.resource ||
+        gsplatComponent?.asset?.resource ||
+        gsplatComponent?.instance?.splat;
+      if (resource?.numSplats !== undefined) splatCount = resource.numSplats;
+      else if (resource?.device?.numSplats !== undefined)
+        splatCount = resource.device.numSplats;
+    } catch (e) {
+      console.error(e);
+    }
+    splatCountDisplay.textContent = splatCount.toLocaleString();
+
+    const falloffVal = a.lodFalloff ?? (a.entity as any).gsplat.lodFalloff ?? 1;
+    lodFalloffInput.value = falloffVal.toString();
+    if (lodFalloffValueDisplay)
+      lodFalloffValueDisplay.textContent = falloffVal.toFixed(1);
     lodMinInput.value = (
       a.lodRangeMin ??
       (a.entity as any).gsplat.lodRangeMin ??
@@ -424,58 +471,7 @@ export function updateTransformUI() {
       (a.entity as any).gsplat.lodRangeMax ??
       99
     ).toString();
-
-    const distContainer = document.getElementById(
-      "splat-lod-distances-container",
-    );
-    const distList = document.getElementById("splat-lod-distances-list");
-    if (distContainer && distList) {
-      if (a.lodLevels && a.lodLevels > 0) {
-        distContainer.style.display = "block";
-        distList.innerHTML = "";
-
-        if (!a.lodDistances) {
-          a.lodDistances = Array(a.lodLevels).fill(0);
-        }
-
-        for (let i = 0; i < a.lodLevels; i++) {
-          const row = document.createElement("div");
-          row.style.display = "flex";
-          row.style.alignItems = "center";
-          row.style.gap = "8px";
-
-          const label = document.createElement("label");
-          label.textContent = "LOD " + i;
-          label.style.width = "40px";
-          label.style.fontSize = "12px";
-          label.style.color = "#ccc";
-
-          const input = document.createElement("input");
-          input.type = "number";
-          input.step = "0.1";
-          input.value = (a.lodDistances[i] ?? 0).toString();
-          input.style.flex = "1";
-          input.style.boxSizing = "border-box";
-          input.style.padding = "4px";
-          input.style.border = "1px solid #555";
-          input.style.background = "#222";
-          input.style.color = "#fff";
-          input.style.borderRadius = "4px";
-
-          input.onchange = (e) => {
-            a.lodDistances![i] =
-              parseFloat((e.target as HTMLInputElement).value) || 0;
-          };
-
-          row.appendChild(label);
-          row.appendChild(input);
-          distList.appendChild(row);
-        }
-      } else {
-        distContainer.style.display = "none";
-      }
-    }
   } else {
-    splatSettingsPanel.style.display = "none";
+    splatSettingsPanel.classList.add("hidden");
   }
 }
